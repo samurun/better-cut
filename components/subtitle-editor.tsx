@@ -50,10 +50,7 @@ function renumberSegments(segments: Segment[]) {
   return segments.map((segment, index) => ({ ...segment, id: index + 1 }));
 }
 
-function buildInsertedSegment(
-  segments: Segment[],
-  insertAt: number,
-): Segment {
+function buildInsertedSegment(segments: Segment[], insertAt: number): Segment {
   const previousSegment = segments[insertAt - 1];
   const nextSegment = segments[insertAt];
 
@@ -138,7 +135,11 @@ export default function SubtitleEditor({
   };
 
   const deleteSegment = (index: number) => {
-    onUpdate(renumberSegments(segments.filter((_, segmentIndex) => segmentIndex !== index)));
+    onUpdate(
+      renumberSegments(
+        segments.filter((_, segmentIndex) => segmentIndex !== index),
+      ),
+    );
   };
 
   const stopRowClick = (event: React.SyntheticEvent<HTMLElement>) => {
@@ -195,7 +196,7 @@ export default function SubtitleEditor({
             key={seg.id}
             ref={setSegmentRef(seg.id)}
             className={cn(
-              'flex items-start gap-2 px-2 py-2 transition-colors rounded-md border border-transparent cursor-pointer',
+              'flex items-start gap-1 px-2 py-2 transition-colors rounded-md border border-transparent cursor-pointer',
               activeSegmentId === seg.id
                 ? 'bg-primary/5 border-primary'
                 : 'hover:bg-accent/50',
@@ -220,7 +221,6 @@ export default function SubtitleEditor({
               />
               <div className='flex gap-2'>
                 <div className='flex items-center gap-1'>
-                  <span className='text-xs text-muted-foreground'>เริ่ม:</span>
                   <Input
                     type='text'
                     value={formatTime(seg.start)}
@@ -229,11 +229,10 @@ export default function SubtitleEditor({
                     }
                     onClick={stopRowClick}
                     onPointerDown={stopRowClick}
-                    className='w-24 font-mono'
+                    className='min-w-min text-xs font-mono'
                   />
                 </div>
                 <div className='flex items-center gap-1'>
-                  <span className='text-xs text-muted-foreground'>จบ:</span>
                   <Input
                     type='text'
                     value={formatTime(seg.end)}
@@ -242,7 +241,7 @@ export default function SubtitleEditor({
                     }
                     onClick={stopRowClick}
                     onPointerDown={stopRowClick}
-                    className='w-24 font-mono'
+                    className='min-w-min text-xs font-mono'
                   />
                 </div>
               </div>

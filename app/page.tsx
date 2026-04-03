@@ -45,7 +45,7 @@ export default function Home() {
 
   return (
     <main className='min-h-screen bg-background'>
-      <div className='container mx-auto flex flex-col gap-4 px-4 py-10'>
+      <div className='max-w-4xl mx-auto flex flex-col gap-4 px-4 py-10'>
         <div className='text-center mb-10'>
           <h1 className='text-4xl font-bold text-foreground mb-2'>
             Better Cut

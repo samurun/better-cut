@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Segment } from '@/lib/subtitle';
-import { AppStatus } from '@/lib/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Segment } from '@/lib/subtitle';
+import type { AppStatus } from '@/lib/types';
 
 export function useTranscribe() {
   const [file, setFile] = useState<File | null>(null);
@@ -11,19 +11,35 @@ export function useTranscribe() {
   const [status, setStatus] = useState<AppStatus>('idle');
   const [segments, setSegments] = useState<Segment[]>([]);
   const [error, setError] = useState('');
+  const objectUrlRef = useRef<string | null>(null);
 
   const isProcessing =
     status === 'uploading' || status === 'queued' || status === 'processing';
 
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
+
   const handleFileSelected = useCallback((selectedFile: File) => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
+
+    const localUrl = URL.createObjectURL(selectedFile);
+    objectUrlRef.current = localUrl;
+
     setFile(selectedFile);
-    setVideoUrl(URL.createObjectURL(selectedFile));
+    setVideoUrl(localUrl);
     setSegments([]);
     setStatus('idle');
     setError('');
   }, []);
 
-  const handleTranscribe = async () => {
+  const handleTranscribe = useCallback(async () => {
     if (!file) return;
 
     setStatus('uploading');
@@ -40,7 +56,6 @@ export function useTranscribe() {
 
       if (!uploadRes.ok) throw new Error(uploadData.error);
 
-      setVideoUrl(uploadData.url);
       setStatus('processing');
 
       const transcribeRes = await fetch('/api/transcribe-whisper', {
@@ -61,7 +76,7 @@ export function useTranscribe() {
       setStatus('error');
       setError(err instanceof Error ? err.message : 'Something went wrong');
     }
-  };
+  }, [file, language]);
 
   return {
     file,

@@ -1,9 +1,10 @@
 'use client';
 
-import { Field, FieldLabel } from './ui/field';
+import { Field } from './ui/field';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -18,7 +19,7 @@ interface LanguageSelectProps {
 const LANGUAGES = [
   { code: 'th', label: 'ไทย' },
   { code: 'en', label: 'English' },
-];
+] as const;
 
 export default function LanguageSelect({
   value,
@@ -32,11 +33,13 @@ export default function LanguageSelect({
           <SelectValue placeholder='เลือกภาษา' />
         </SelectTrigger>
         <SelectContent>
-          {LANGUAGES.map((lang) => (
-            <SelectItem key={lang.code} value={lang.code}>
-              {lang.label} ({lang.code})
-            </SelectItem>
-          ))}
+          <SelectGroup>
+            {LANGUAGES.map((lang) => (
+              <SelectItem key={lang.code} value={lang.code}>
+                {lang.label} ({lang.code})
+              </SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
     </Field>

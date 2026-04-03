@@ -1,7 +1,8 @@
 'use client';
 
-import { Segment, toSRT, toVTT } from '@/lib/subtitle';
+import { toSRT, toVTT, type Segment } from '@/lib/subtitle';
 import { Button } from '@/components/ui/button';
+import { DownloadIcon } from 'lucide-react';
 
 interface ExportButtonsProps {
   segments: Segment[];
@@ -9,12 +10,12 @@ interface ExportButtonsProps {
 
 function downloadFile(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(objectUrl);
 }
 
 export default function ExportButtons({ segments }: ExportButtonsProps) {
@@ -25,6 +26,7 @@ export default function ExportButtons({ segments }: ExportButtonsProps) {
           downloadFile(toSRT(segments), 'subtitle.srt', 'text/plain')
         }
       >
+        <DownloadIcon data-icon='inline-start' />
         ดาวน์โหลด SRT
       </Button>
       <Button
@@ -32,6 +34,7 @@ export default function ExportButtons({ segments }: ExportButtonsProps) {
           downloadFile(toVTT(segments), 'subtitle.vtt', 'text/vtt')
         }
       >
+        <DownloadIcon data-icon='inline-start' />
         ดาวน์โหลด VTT
       </Button>
     </div>

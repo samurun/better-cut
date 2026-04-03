@@ -1,21 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import { transcribeWithWhisper, WhisperSegment } from "@/lib/whisper";
-
-type Segment = { id: number; start: number; end: number; text: string };
+import { NextRequest, NextResponse } from 'next/server';
+import { transcribeWithWhisper, type WhisperSegment } from '@/lib/whisper';
+import type { Segment } from '@/lib/subtitle';
 
 const MAX_CHARS = 45;
+const DEFAULT_LANGUAGE = 'th';
 
 /**
  * แบ่ง Whisper segment ยาวๆ ออกเป็นท่อนสั้นๆ
  * interpolate timestamp ตามสัดส่วนตัวอักษรภายใน segment เดียวกัน
  * (แม่นกว่า interpolate ทั้ง transcript เพราะช่วงเวลาสั้น)
  */
-function splitLongSegment(seg: WhisperSegment): Segment[] {
+function splitLongSegment(seg: WhisperSegment): Omit<Segment, 'id'>[] {
   const text = seg.text.trim();
   if (text.length <= MAX_CHARS) {
     return [
       {
-        id: 0,
         start: Math.round(seg.start * 1000),
         end: Math.round(seg.end * 1000),
         text,
@@ -25,7 +24,7 @@ function splitLongSegment(seg: WhisperSegment): Segment[] {
 
   const duration = seg.end - seg.start;
   const totalChars = text.length;
-  const results: Segment[] = [];
+  const results: Omit<Segment, 'id'>[] = [];
   let pos = 0;
 
   while (pos < totalChars) {
@@ -33,7 +32,7 @@ function splitLongSegment(seg: WhisperSegment): Segment[] {
 
     // พยายามตัดที่ช่องว่างใกล้ๆ เพื่อไม่ให้คำขาด
     if (end < totalChars) {
-      const spaceIdx = text.lastIndexOf(" ", end);
+      const spaceIdx = text.lastIndexOf(' ', end);
       if (spaceIdx > pos + MAX_CHARS * 0.4) {
         end = spaceIdx;
       }
@@ -44,7 +43,6 @@ function splitLongSegment(seg: WhisperSegment): Segment[] {
       const chunkStart = seg.start + (pos / totalChars) * duration;
       const chunkEnd = seg.start + (end / totalChars) * duration;
       results.push({
-        id: 0,
         start: Math.round(chunkStart * 1000),
         end: Math.round(chunkEnd * 1000),
         text: chunk,
@@ -60,23 +58,20 @@ export async function POST(request: NextRequest) {
   const { filePath, languageCode } = await request.json();
 
   if (!filePath) {
-    return NextResponse.json(
-      { error: "filePath is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'filePath is required' }, { status: 400 });
   }
 
   try {
     const { text, segments: whisperSegments } = await transcribeWithWhisper(
       filePath,
-      languageCode || "th"
+      languageCode ?? DEFAULT_LANGUAGE,
     );
 
     console.log(
       `[whisper] segments: ${whisperSegments.length}, text length: ${text.length}`,
       whisperSegments
         .slice(0, 3)
-        .map((s) => `"${s.text.slice(0, 30)}..." (${s.start}-${s.end}s)`)
+        .map((s) => `"${s.text.slice(0, 30)}..." (${s.start}-${s.end}s)`),
     );
 
     // Whisper segments → sub-split ถ้ายาวเกิน → renumber
@@ -84,16 +79,9 @@ export async function POST(request: NextRequest) {
       .flatMap(splitLongSegment)
       .map((seg, i) => ({ ...seg, id: i + 1 }));
 
-    return NextResponse.json({
-      status: "completed",
-      segments,
-      text,
-    });
+    return NextResponse.json({ status: 'completed', segments, text });
   } catch (error) {
-    console.error("Whisper transcription error:", error);
-    return NextResponse.json(
-      { error: "Failed to transcribe" },
-      { status: 500 }
-    );
+    console.error('Whisper transcription error:', error);
+    return NextResponse.json({ error: 'Failed to transcribe' }, { status: 500 });
   }
 }

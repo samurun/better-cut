@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { cn } from '@/lib/utils';
+import { UploadIcon } from 'lucide-react';
 
 interface UploadZoneProps {
   onFileSelected: (file: File) => void;
@@ -44,9 +46,13 @@ export default function UploadZone({
       }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
-      className={`border border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer
-        ${isDragging ? 'border-blue-500 bg-blue-50' : 'border hover:border-gray-400'}
-        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={cn(
+        'border border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer',
+        isDragging
+          ? 'border-primary bg-primary/10'
+          : 'border hover:border-muted',
+        disabled && 'opacity-50 cursor-not-allowed',
+      )}
     >
       <input
         type='file'
@@ -58,10 +64,10 @@ export default function UploadZone({
       />
       <label
         htmlFor='video-upload'
-        className={`cursor-pointer ${disabled ? 'cursor-not-allowed' : ''}`}
+        className={cn('cursor-pointer', disabled && 'cursor-not-allowed')}
       >
-        <div className='text-5xl mb-4'>🎬</div>
-        <p className='text-lg font-medium text-muted-foreground'>
+        <UploadIcon className='mx-auto mb-4 size-6 text-muted-foreground' />
+        <p className='font-medium text-muted-foreground'>
           ลากวิดีโอมาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์
         </p>
         <p className='text-sm text-muted-foreground mt-2'>

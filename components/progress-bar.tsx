@@ -1,30 +1,37 @@
 'use client';
 
+import type { AppStatus } from '@/lib/types';
+
+type ProgressState = {
+  color: string;
+  label: string;
+  progress: number;
+};
+
+const STATUS_MAP: Record<Exclude<AppStatus, 'idle'>, ProgressState> = {
+  uploading: { label: 'กำลังอัปโหลด...', color: 'bg-primary', progress: 25 },
+  queued: { label: 'อยู่ในคิว...', color: 'bg-primary/70', progress: 40 },
+  processing: {
+    label: 'กำลัง Transcribe...',
+    color: 'bg-primary',
+    progress: 70,
+  },
+  completed: { label: 'เสร็จสิ้น!', color: 'bg-primary', progress: 100 },
+  error: { label: 'เกิดข้อผิดพลาด', color: 'bg-destructive', progress: 100 },
+};
+
+const FALLBACK_STATE: ProgressState = {
+  label: 'กำลังเตรียม...',
+  color: 'bg-muted-foreground',
+  progress: 50,
+};
+
 interface ProgressBarProps {
-  status: string;
+  status: Exclude<AppStatus, 'idle'>;
 }
 
 export default function ProgressBar({ status }: ProgressBarProps) {
-  const statusMap: Record<
-    string,
-    { label: string; color: string; progress: number }
-  > = {
-    uploading: { label: 'กำลังอัปโหลด...', color: 'bg-primary', progress: 25 },
-    queued: { label: 'อยู่ในคิว...', color: 'bg-primary/70', progress: 40 },
-    processing: {
-      label: 'กำลัง Transcribe...',
-      color: 'bg-primary',
-      progress: 70,
-    },
-    completed: { label: 'เสร็จสิ้น!', color: 'bg-green-600', progress: 100 },
-    error: { label: 'เกิดข้อผิดพลาด', color: 'bg-destructive', progress: 100 },
-  };
-
-  const current = statusMap[status] || {
-    label: status,
-    color: 'bg-muted-foreground',
-    progress: 50,
-  };
+  const current = STATUS_MAP[status] ?? FALLBACK_STATE;
 
   return (
     <div className='w-full'>
@@ -32,7 +39,9 @@ export default function ProgressBar({ status }: ProgressBarProps) {
         <span className='text-sm font-medium text-foreground'>
           {current.label}
         </span>
-        <span className='text-sm text-muted-foreground'>{current.progress}%</span>
+        <span className='text-sm text-muted-foreground'>
+          {current.progress}%
+        </span>
       </div>
       <div className='w-full bg-secondary rounded-full h-2.5'>
         <div

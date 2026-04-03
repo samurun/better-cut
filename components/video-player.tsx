@@ -1,7 +1,21 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
-import { Segment } from '@/lib/subtitle';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
+import type { Segment } from '@/lib/subtitle';
+
+interface SeekOptions {
+  play?: boolean;
+}
+
+export interface VideoPlayerHandle {
+  seekTo: (timeMs: number, options?: SeekOptions) => void;
+}
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -9,15 +23,85 @@ interface VideoPlayerProps {
   onTimeUpdate?: (timeMs: number) => void;
 }
 
-export default function VideoPlayer({
-  videoUrl,
-  segments,
-  onTimeUpdate,
-}: VideoPlayerProps) {
+function findActive(segments: Segment[], timeMs: number) {
+  return segments.find((seg) => timeMs >= seg.start && timeMs < seg.end);
+}
+
+function syncSubtitle(
+  segments: Segment[],
+  timeMs: number,
+  onSubtitleChange: (subtitle: string, segmentId?: number) => void,
+) {
+  const activeSegment = findActive(segments, timeMs);
+  onSubtitleChange(activeSegment?.text ?? '', activeSegment?.id);
+}
+
+const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(function VideoPlayer(
+  { videoUrl, segments, onTimeUpdate },
+  ref,
+) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [currentSubtitle, setCurrentSubtitle] = useState('');
   const [subtitleKey, setSubtitleKey] = useState(0);
 
+  // Keep latest values in refs so the rAF loop never causes re-mounts
+  const segmentsRef = useRef(segments);
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+
+  useEffect(() => {
+    segmentsRef.current = segments;
+    onTimeUpdateRef.current = onTimeUpdate;
+  }, [segments, onTimeUpdate]);
+
+  const updateSubtitle = (subtitle: string, segmentId?: number) => {
+    setCurrentSubtitle((currentValue) => {
+      if (segmentId === undefined) {
+        return currentValue ? '' : currentValue;
+      }
+
+      setSubtitleKey((currentKey) => currentKey + (currentValue === subtitle ? 0 : 1));
+      return subtitle;
+    });
+  };
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      seekTo(timeMs: number, options?: SeekOptions) {
+        const video = videoRef.current;
+        if (!video || !Number.isFinite(timeMs)) return;
+
+        const safeTimeMs = Math.max(0, timeMs);
+        const shouldPlay = options?.play ?? false;
+
+        const seek = () => {
+          video.currentTime = safeTimeMs / 1000;
+          syncSubtitle(segmentsRef.current, safeTimeMs, updateSubtitle);
+          onTimeUpdateRef.current?.(safeTimeMs);
+          if (shouldPlay) void video.play().catch(() => {});
+        };
+
+        if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+          video.addEventListener('loadedmetadata', seek, { once: true });
+          return;
+        }
+
+        seek();
+      },
+    }),
+    [],
+  );
+
+  // Update subtitle text reactively when segments change (even while paused)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const timeMs = video.currentTime * 1000;
+    syncSubtitle(segments, timeMs, updateSubtitle);
+  }, [segments]);
+
+  // Track playback position with rAF — runs once, reads refs
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -28,11 +112,9 @@ export default function VideoPlayer({
     const tick = () => {
       if (!video.paused && !video.ended) {
         const timeMs = video.currentTime * 1000;
-        onTimeUpdate?.(timeMs);
+        onTimeUpdateRef.current?.(timeMs);
 
-        const active = segments.find(
-          (seg) => timeMs >= seg.start && timeMs <= seg.end,
-        );
+        const active = findActive(segmentsRef.current, timeMs);
 
         if (active) {
           if (active.id !== lastSegId) {
@@ -40,7 +122,7 @@ export default function VideoPlayer({
             setSubtitleKey((k) => k + 1);
           }
           setCurrentSubtitle(active.text);
-        } else {
+        } else if (lastSegId !== -1) {
           lastSegId = -1;
           setCurrentSubtitle('');
         }
@@ -50,10 +132,10 @@ export default function VideoPlayer({
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [segments, onTimeUpdate]);
+  }, []);
 
   return (
-    <div className='relative w-full bg-black rounded-lg overflow-hidden'>
+    <div className='relative w-full overflow-hidden rounded-lg bg-black'>
       <video
         ref={videoRef}
         src={videoUrl}
@@ -61,10 +143,10 @@ export default function VideoPlayer({
         className='w-full max-h-125'
       />
       {currentSubtitle && (
-        <div className='absolute inset-0 flex bottom-12 items-end justify-center pointer-events-none px-6'>
+        <div className='pointer-events-none absolute inset-0 bottom-12 flex items-end justify-center px-6'>
           <span
             key={subtitleKey}
-            className='text-white text-2xl  sm:text-3xl md:text-4xl font-extrabold text-center leading-tight animate-[subtitle-pop_0.2s_ease-out]'
+            className='rounded bg-black/50 px-2 py-1.5 text-center text-xl font-extrabold leading-tight text-white'
             style={{
               textShadow: '0 0 8px rgba(0,0,0,0.9), 0 2px 6px rgba(0,0,0,0.7)',
               maxWidth: '85%',
@@ -76,4 +158,6 @@ export default function VideoPlayer({
       )}
     </div>
   );
-}
+});
+
+export default VideoPlayer;

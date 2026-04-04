@@ -1,15 +1,10 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono, Roboto } from 'next/font/google';
+import { Inter, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-const roboto = Roboto({ subsets: ['latin'], variable: '--font-sans' });
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
@@ -33,13 +28,12 @@ export default function RootLayout({
       className={cn(
         'h-full',
         'dark antialiased',
-        geistSans.variable,
+        inter.variable,
         geistMono.variable,
-        'font-sans',
-        roboto.variable,
+        'font-sans'
       )}
     >
-      <body className='min-h-full flex flex-col'>
+      <body className='h-full lg:overflow-hidden overflow-y-auto'>
         <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>

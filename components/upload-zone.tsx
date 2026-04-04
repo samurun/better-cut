@@ -25,7 +25,7 @@ export default function UploadZone({
         onFileSelected(file);
       }
     },
-    [onFileSelected, disabled],
+    [onFileSelected, disabled]
   );
 
   const handleChange = useCallback(
@@ -35,7 +35,7 @@ export default function UploadZone({
         onFileSelected(file);
       }
     },
-    [onFileSelected],
+    [onFileSelected]
   );
 
   return (
@@ -46,12 +46,14 @@ export default function UploadZone({
       }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
+      aria-label='อัปโหลดวิดีโอ'
       className={cn(
-        'border border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer',
+        'rounded-lg p-8 text-center transition-colors cursor-pointer',
+        'border border-dashed border-border',
         isDragging
-          ? 'border-primary bg-primary/10'
-          : 'border hover:border-muted',
-        disabled && 'opacity-50 cursor-not-allowed',
+          ? 'border-primary/50 bg-primary/5'
+          : 'hover:bg-accent/50',
+        disabled && 'opacity-50 cursor-not-allowed'
       )}
     >
       <input
@@ -66,12 +68,12 @@ export default function UploadZone({
         htmlFor='video-upload'
         className={cn('cursor-pointer', disabled && 'cursor-not-allowed')}
       >
-        <UploadIcon className='mx-auto mb-4 size-6 text-muted-foreground' />
-        <p className='font-medium text-muted-foreground'>
-          ลากวิดีโอมาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์
+        <UploadIcon className='mx-auto mb-3 size-5 text-muted-foreground' />
+        <p className='text-sm text-muted-foreground'>
+          ลากวิดีโอมาวาง หรือคลิกเพื่อเลือกไฟล์
         </p>
-        <p className='text-sm text-muted-foreground mt-2'>
-          รองรับ MP4, WebM, MOV, AVI, MKV
+        <p className='text-xs text-muted-foreground/60 mt-1'>
+          MP4, WebM, MOV, AVI, MKV
         </p>
       </label>
     </div>

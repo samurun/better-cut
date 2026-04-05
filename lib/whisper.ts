@@ -20,7 +20,7 @@ const CHUNK_SECONDS = 600; // 10-minute chunks
 
 function getAudioDuration(filePath: string): number {
   const out = execSync(
-    `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`
+    `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`,
   )
     .toString()
     .trim();
@@ -36,7 +36,7 @@ function splitAudio(filePath: string, tmpDir: string): string[] {
   while (start < duration) {
     const chunkPath = path.join(tmpDir, `chunk_${index}.mp3`);
     execSync(
-      `ffmpeg -y -i "${filePath}" -ss ${start} -t ${CHUNK_SECONDS} -vn -ar 16000 -ac 1 -q:a 5 "${chunkPath}"`
+      `ffmpeg -y -i "${filePath}" -ss ${start} -t ${CHUNK_SECONDS} -vn -ar 16000 -ac 1 -q:a 5 "${chunkPath}"`,
     );
     chunkPaths.push(chunkPath);
     start += CHUNK_SECONDS;
@@ -49,7 +49,7 @@ function splitAudio(filePath: string, tmpDir: string): string[] {
 async function transcribeChunk(
   filePath: string,
   language: string,
-  offsetSeconds: number
+  offsetSeconds: number,
 ): Promise<{ text: string; segments: WhisperSegment[] }> {
   const transcription = await openai.audio.transcriptions.create({
     file: fs.createReadStream(filePath),
@@ -64,7 +64,7 @@ async function transcribeChunk(
       text: s.text.trim(),
       start: s.start + offsetSeconds,
       end: s.end + offsetSeconds,
-    })
+    }),
   );
 
   return { text: transcription.text, segments };
@@ -72,7 +72,7 @@ async function transcribeChunk(
 
 export async function transcribeWithWhisper(
   filePath: string,
-  language: string
+  language: string,
 ): Promise<{ text: string; segments: WhisperSegment[] }> {
   const fileSize = fs.statSync(filePath).size;
 
@@ -82,7 +82,7 @@ export async function transcribeWithWhisper(
 
   // File too large — split into chunks
   console.log(
-    `[whisper] File too large (${(fileSize / 1024 / 1024).toFixed(1)} MB), splitting into chunks…`
+    `[whisper] File too large (${(fileSize / 1024 / 1024).toFixed(1)} MB), splitting into chunks…`,
   );
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'whisper-'));
@@ -99,7 +99,7 @@ export async function transcribeWithWhisper(
       const { text, segments } = await transcribeChunk(
         chunkPaths[i],
         language,
-        offsetSeconds
+        offsetSeconds,
       );
       allTexts.push(text);
       allSegments.push(...segments);

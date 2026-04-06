@@ -3,17 +3,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { Segment } from '@/lib/subtitle';
 import { cn } from '@/lib/utils';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from './ui/card';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import ExportButtons from './export-buttons';
 import { Textarea } from './ui/textarea';
 import { ChevronDownIcon, ChevronUpIcon, XIcon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
@@ -104,7 +95,7 @@ export default function SubtitleEditor({
       if (el) segmentRefs.current.set(id, el);
       else segmentRefs.current.delete(id);
     },
-    [],
+    []
   );
 
   useEffect(() => {
@@ -127,7 +118,7 @@ export default function SubtitleEditor({
   const updateSegment = (
     index: number,
     field: keyof Segment,
-    value: string | number,
+    value: string | number
   ) => {
     const updated = [...segments];
     updated[index] = { ...updated[index], [field]: value };
@@ -137,8 +128,8 @@ export default function SubtitleEditor({
   const deleteSegment = (index: number) => {
     onUpdate(
       renumberSegments(
-        segments.filter((_, segmentIndex) => segmentIndex !== index),
-      ),
+        segments.filter((_, segmentIndex) => segmentIndex !== index)
+      )
     );
   };
 
@@ -148,7 +139,6 @@ export default function SubtitleEditor({
 
   const handleSegmentSelect = (segment: Segment) => {
     onSegmentClick?.(segment);
-
     const startMs = Number(segment.start);
     if (Number.isFinite(startMs)) {
       handleTimeUpdate?.(startMs);
@@ -157,11 +147,10 @@ export default function SubtitleEditor({
 
   const handleSegmentKeyDown = (
     event: React.KeyboardEvent<HTMLDivElement>,
-    segment: Segment,
+    segment: Segment
   ) => {
     if (event.target !== event.currentTarget) return;
     if (event.key !== 'Enter' && event.key !== ' ') return;
-
     event.preventDefault();
     handleSegmentSelect(segment);
   };
@@ -178,49 +167,57 @@ export default function SubtitleEditor({
   };
 
   return (
-    <Card className='h-auto'>
-      <CardHeader>
-        <CardTitle>แก้ไข Subtitle</CardTitle>
-        <CardDescription>{segments.length} segments</CardDescription>
-      </CardHeader>
-      <CardContent
+    <div className='h-full flex flex-col' role='region' aria-label='Subtitle Editor'>
+      {/* Header */}
+      <div className='shrink-0 px-4 py-3 border-b border-border flex items-center justify-between'>
+        <span className='text-[11px] font-medium uppercase tracking-wider text-muted-foreground'>
+          Subtitles
+        </span>
+        <span className='text-[11px] text-muted-foreground'>
+          {segments.length} segments
+        </span>
+      </div>
+
+      {/* Segment list */}
+      <div
         ref={scrollContainerRef}
-        className='max-h-[58vh] overflow-auto space-y-4'
+        className='flex-1 overflow-y-auto scrollbar-thin'
         onPointerDown={() => setUserInteracting(true)}
         onPointerUp={() => setUserInteracting(false)}
         onPointerCancel={() => setUserInteracting(false)}
         onPointerLeave={() => setUserInteracting(false)}
       >
-        {segments.map((seg, i) => (
-          <div
-            key={seg.id}
-            ref={setSegmentRef(seg.id)}
-            className={cn(
-              'flex items-start gap-1 px-2 py-2 transition-colors rounded-md border border-transparent cursor-pointer',
-              activeSegmentId === seg.id
-                ? 'bg-primary/5 border-primary'
-                : 'hover:bg-accent/50',
-            )}
-            role='button'
-            tabIndex={0}
-            aria-pressed={activeSegmentId === seg.id}
-            onClick={() => handleSegmentSelect(seg)}
-            onKeyDown={(event) => handleSegmentKeyDown(event, seg)}
-          >
-            <span className='text-xs text-muted-foreground font-mono mt-2'>
-              {seg.id}
-            </span>
-            <div className='flex flex-1 flex-col gap-2'>
-              <Textarea
-                value={seg.text}
-                onChange={(e) => updateSegment(i, 'text', e.target.value)}
-                onClick={stopRowClick}
-                onPointerDown={stopRowClick}
-                rows={1}
-                className='resize-none'
-              />
-              <div className='flex gap-2'>
-                <div className='flex items-center gap-1'>
+        <div className='divide-y divide-border'>
+          {segments.map((seg, i) => (
+            <div
+              key={seg.id}
+              ref={setSegmentRef(seg.id)}
+              className={cn(
+                'group flex items-start gap-2 px-3 py-2 transition-colors cursor-pointer',
+                activeSegmentId === seg.id
+                  ? 'bg-primary/5 border-l-2 border-l-primary'
+                  : 'hover:bg-accent/30 border-l-2 border-l-transparent'
+              )}
+              role='button'
+              tabIndex={0}
+              aria-pressed={activeSegmentId === seg.id}
+              onClick={() => handleSegmentSelect(seg)}
+              onKeyDown={(event) => handleSegmentKeyDown(event, seg)}
+            >
+              <span className='text-[10px] text-muted-foreground/60 font-mono mt-2 w-5 text-right shrink-0'>
+                {seg.id}
+              </span>
+
+              <div className='flex flex-1 flex-col gap-1.5 min-w-0'>
+                <Textarea
+                  value={seg.text}
+                  onChange={(e) => updateSegment(i, 'text', e.target.value)}
+                  onClick={stopRowClick}
+                  onPointerDown={stopRowClick}
+                  rows={1}
+                  className='resize-none text-sm bg-transparent border-transparent focus:border-border focus:bg-card'
+                />
+                <div className='flex gap-1.5'>
                   <Input
                     type='text'
                     value={formatTime(seg.start)}
@@ -229,10 +226,8 @@ export default function SubtitleEditor({
                     }
                     onClick={stopRowClick}
                     onPointerDown={stopRowClick}
-                    className='min-w-min text-xs font-mono'
+                    className='w-20 text-[11px] font-mono text-muted-foreground bg-transparent border-transparent focus:border-border'
                   />
-                </div>
-                <div className='flex items-center gap-1'>
                   <Input
                     type='text'
                     value={formatTime(seg.end)}
@@ -241,59 +236,59 @@ export default function SubtitleEditor({
                     }
                     onClick={stopRowClick}
                     onPointerDown={stopRowClick}
-                    className='min-w-min text-xs font-mono'
+                    className='w-20 text-[11px] font-mono text-muted-foreground bg-transparent border-transparent focus:border-border'
                   />
                 </div>
               </div>
+
+              {/* Action buttons — visible on hover */}
+              <div className='flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity'>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size='icon-xs'
+                      variant='ghost'
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        insertSegment(i, 'before');
+                      }}
+                    >
+                      <ChevronUpIcon className='size-3' />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>แทรกก่อน</TooltipContent>
+                </Tooltip>
+                <Button
+                  size='icon-xs'
+                  variant='ghost'
+                  className='text-destructive hover:text-destructive'
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    deleteSegment(i);
+                  }}
+                >
+                  <XIcon className='size-3' />
+                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size='icon-xs'
+                      variant='ghost'
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        insertSegment(i, 'after');
+                      }}
+                    >
+                      <ChevronDownIcon className='size-3' />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>แทรกหลัง</TooltipContent>
+                </Tooltip>
+              </div>
             </div>
-            <div className='flex flex-col gap-1'>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size='icon-xs'
-                    variant='ghost'
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      insertSegment(i, 'before');
-                    }}
-                  >
-                    <ChevronUpIcon />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>แทรกก่อน</TooltipContent>
-              </Tooltip>
-              <Button
-                size='icon-xs'
-                variant='destructive'
-                onClick={(event) => {
-                  event.stopPropagation();
-                  deleteSegment(i);
-                }}
-              >
-                <XIcon />
-              </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size='icon-xs'
-                    variant='ghost'
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      insertSegment(i, 'after');
-                    }}
-                  >
-                    <ChevronDownIcon />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>แทรกหลัง</TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-        ))}
-      </CardContent>
-      <CardFooter>
-        <ExportButtons segments={segments} />
-      </CardFooter>
-    </Card>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

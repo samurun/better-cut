@@ -1,20 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { transcribeWithWhisper, type WhisperSegment } from '@/lib/whisper';
+import { transcribeWithAssemblyAI } from '@/lib/assemblyai';
 import type { Segment } from '@/lib/subtitle';
 
 const MAX_CHARS = 45;
-const DEFAULT_LANGUAGE = 'th';
 
-function splitLongSegment(seg: WhisperSegment): Omit<Segment, 'id'>[] {
+function splitLongSegment(seg: { start: number; end: number; text: string }): Omit<Segment, 'id'>[] {
   const text = seg.text.trim();
   if (text.length <= MAX_CHARS) {
-    return [
-      {
-        start: Math.round(seg.start * 1000),
-        end: Math.round(seg.end * 1000),
-        text,
-      },
-    ];
+    return [{ start: seg.start, end: seg.end, text }];
   }
 
   const duration = seg.end - seg.start;
@@ -37,8 +30,8 @@ function splitLongSegment(seg: WhisperSegment): Omit<Segment, 'id'>[] {
       const chunkStart = seg.start + (pos / totalChars) * duration;
       const chunkEnd = seg.start + (end / totalChars) * duration;
       results.push({
-        start: Math.round(chunkStart * 1000),
-        end: Math.round(chunkEnd * 1000),
+        start: Math.round(chunkStart),
+        end: Math.round(chunkEnd),
         text: chunk,
       });
     }
@@ -51,29 +44,25 @@ function splitLongSegment(seg: WhisperSegment): Omit<Segment, 'id'>[] {
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const file = formData.get('file') as File | null;
-  const languageCode = (formData.get('languageCode') as string) || DEFAULT_LANGUAGE;
 
   if (!file) {
     return NextResponse.json({ error: 'file is required' }, { status: 400 });
   }
 
   try {
-    const { text, segments: whisperSegments } = await transcribeWithWhisper(
-      file,
-      languageCode
-    );
+    const { text, segments: rawSegments } = await transcribeWithAssemblyAI(file);
 
     console.log(
-      `[whisper] segments: ${whisperSegments.length}, text length: ${text.length}`
+      `[assemblyai] segments: ${rawSegments.length}, text length: ${text.length}`
     );
 
-    const segments: Segment[] = whisperSegments
+    const segments: Segment[] = rawSegments
       .flatMap(splitLongSegment)
       .map((seg, i) => ({ ...seg, id: i + 1 }));
 
     return NextResponse.json({ status: 'completed', segments, text });
   } catch (error) {
-    console.error('Whisper transcription error:', error);
+    console.error('AssemblyAI transcription error:', error);
     const message =
       error instanceof Error ? error.message : 'Failed to transcribe';
     return NextResponse.json({ error: message }, { status: 500 });

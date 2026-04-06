@@ -1,6 +1,5 @@
 'use client';
 
-import { Field } from './ui/field';
 import {
   Select,
   SelectContent,
@@ -27,21 +26,19 @@ export default function LanguageSelect({
   disabled,
 }: LanguageSelectProps) {
   return (
-    <Field>
-      <Select onValueChange={onChange} value={value} disabled={disabled}>
-        <SelectTrigger>
-          <SelectValue placeholder='เลือกภาษา' />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {LANGUAGES.map((lang) => (
-              <SelectItem key={lang.code} value={lang.code}>
-                {lang.label} ({lang.code})
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </Field>
+    <Select onValueChange={onChange} value={value} disabled={disabled}>
+      <SelectTrigger className='w-full'>
+        <SelectValue placeholder='เลือกภาษา' />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {LANGUAGES.map((lang) => (
+            <SelectItem key={lang.code} value={lang.code}>
+              {lang.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }

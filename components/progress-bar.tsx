@@ -2,28 +2,13 @@
 
 import type { AppStatus } from '@/lib/types';
 
-type ProgressState = {
-  color: string;
-  label: string;
-  progress: number;
-};
-
-const STATUS_MAP: Record<Exclude<AppStatus, 'idle'>, ProgressState> = {
-  uploading: { label: 'กำลังอัปโหลด...', color: 'bg-primary', progress: 25 },
-  queued: { label: 'อยู่ในคิว...', color: 'bg-primary/70', progress: 40 },
-  processing: {
-    label: 'กำลัง Transcribe...',
-    color: 'bg-primary',
-    progress: 70,
-  },
-  completed: { label: 'เสร็จสิ้น!', color: 'bg-primary', progress: 100 },
-  error: { label: 'เกิดข้อผิดพลาด', color: 'bg-destructive', progress: 100 },
-};
-
-const FALLBACK_STATE: ProgressState = {
-  label: 'กำลังเตรียม...',
-  color: 'bg-muted-foreground',
-  progress: 50,
+const STATUS_MAP: Record<
+  Exclude<AppStatus, 'idle'>,
+  { label: string; color: string }
+> = {
+  processing: { label: 'กำลัง Transcribe...', color: 'bg-primary' },
+  completed: { label: 'เสร็จสิ้น', color: 'bg-primary' },
+  error: { label: 'เกิดข้อผิดพลาด', color: 'bg-destructive' },
 };
 
 interface ProgressBarProps {
@@ -31,22 +16,19 @@ interface ProgressBarProps {
 }
 
 export default function ProgressBar({ status }: ProgressBarProps) {
-  const current = STATUS_MAP[status] ?? FALLBACK_STATE;
+  const current = STATUS_MAP[status];
+  const isAnimating = status === 'processing';
 
   return (
-    <div className='w-full'>
-      <div className='flex justify-between mb-1'>
-        <span className='text-sm font-medium text-foreground'>
-          {current.label}
-        </span>
-        <span className='text-sm text-muted-foreground'>
-          {current.progress}%
-        </span>
-      </div>
-      <div className='w-full bg-secondary rounded-full h-2.5'>
+    <div className='w-full' aria-live='polite'>
+      <span className='text-[11px] text-muted-foreground mb-1.5 block'>
+        {current.label}
+      </span>
+      <div className='w-full bg-secondary rounded-full h-1 overflow-hidden'>
         <div
-          className={`h-2.5 rounded-full transition-all duration-500 ${current.color}`}
-          style={{ width: `${current.progress}%` }}
+          className={`h-1 rounded-full transition-all duration-700 ${current.color} ${
+            isAnimating ? 'w-3/4 animate-pulse' : 'w-full'
+          }`}
         />
       </div>
     </div>
